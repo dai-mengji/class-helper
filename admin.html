@@ -8,37 +8,42 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f7f4f0; padding: 20px; color: #333; }
-        .container { max-width: 1000px; margin: 0 auto; }
+        .container { max-width: 700px; margin: 0 auto; }
         
         /* 登录框样式 */
         .login-box { background: #fff; padding: 30px; border-radius: 15px; text-align: center; max-width: 400px; margin: 100px auto; box-shadow: 0 5px 20px rgba(0,0,0,0.05); }
         input[type="password"] { width: 100%; padding: 12px; margin: 15px 0; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; text-align: center; }
-        button { background: #5a4b41; color: white; border: none; padding: 12px 30px; border-radius: 8px; font-size: 16px; cursor: pointer; width: 100%; transition: 0.3s; }
-        button:hover { background: #3e332b; }
+        button.login-btn { background: #5a4b41; color: white; border: none; padding: 12px 30px; border-radius: 8px; font-size: 16px; cursor: pointer; width: 100%; transition: 0.3s; }
+        button.login-btn:hover { background: #3e332b; }
         
         /* 数据看板样式 */
         .data-board { display: none; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #e0d6c8; padding-bottom: 15px; }
-        .header h2 { color: #5a4b41; }
-        .refresh-btn { background: #c9a070; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; width: auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .header h2 { color: #5a4b41; font-size: 20px; }
+        .refresh-btn { background: #c9a070; color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: 0.3s; }
         .refresh-btn:hover { background: #b08a5e; }
 
-        /* 两个模块的布局 */
-        .modules-container { display: flex; gap: 20px; flex-wrap: wrap; }
-        .module { flex: 1; min-width: 300px; background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border-top: 5px solid transparent; }
-        .module.treehole-module { border-top-color: #2e7d32; } /* 绿色边框代表树洞 */
-        .module.suggestion-module { border-top-color: #1565c0; } /* 蓝色边框代表建议 */
+        /* Tab 切换样式（和前台一致） */
+        .tabs { display: flex; background: #f0ede9; border-radius: 12px; padding: 5px; margin-bottom: 20px; }
+        .tab { flex: 1; text-align: center; padding: 12px 0; border-radius: 8px; cursor: pointer; font-weight: bold; color: #8c7b70; transition: all 0.3s; font-size: 15px; }
+        .tab.active { background: #fff; color: #5a4b41; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         
-        .module-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; }
-        .module-title.treehole-title { color: #2e7d32; }
-        .module-title.suggestion-title { color: #1565c0; }
-        .count-badge { background: #f0ede9; color: #666; font-size: 12px; padding: 2px 8px; border-radius: 10px; }
+        /* 数量小角标 */
+        .count-badge { background: rgba(0,0,0,0.08); padding: 2px 8px; border-radius: 10px; font-size: 12px; margin-left: 5px; }
+        .tab.active .count-badge { background: #e0d6c8; color: #5a4b41; }
 
         /* 卡片样式 */
-        .card { background: #faf9f7; padding: 15px; border-radius: 10px; margin-bottom: 12px; border: 1px solid #e0d6c8; }
-        .card-header { display: flex; justify-content: flex-end; margin-bottom: 8px; font-size: 12px; color: #999; }
-        .content { font-size: 15px; line-height: 1.5; white-space: pre-wrap; color: #333; }
-        .empty-tip { color: #999; font-size: 14px; text-align: center; padding: 20px 0; }
+        .data-container { display: none; }
+        .data-container.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        .card { background: #fff; padding: 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); border-left: 5px solid transparent; }
+        .card.treehole-card { border-left-color: #2e7d32; }
+        .card.suggestion-card { border-left-color: #1565c0; }
+        
+        .card-header { display: flex; justify-content: flex-end; margin-bottom: 10px; font-size: 13px; color: #999; }
+        .content { font-size: 16px; line-height: 1.6; white-space: pre-wrap; color: #333; }
+        .empty-tip { color: #999; font-size: 14px; text-align: center; padding: 30px 0; background: #fff; border-radius: 12px; }
     </style>
 </head>
 <body>
@@ -49,38 +54,32 @@
         <h2>导员专属后台</h2>
         <p style="color:#999; margin-top:10px; font-size:14px;">请输入密码查看数据</p>
         <input type="password" id="passwordInput" placeholder="请输入密码">
-        <button onclick="checkPassword()">进入看板</button>
+        <button class="login-btn" onclick="checkPassword()">进入看板</button>
     </div>
 
     <!-- 数据界面 -->
     <div class="data-board" id="dataBoard">
         <div class="header">
-            <h2>班级心语屋 - 数据总览</h2>
+            <h2>心语屋 - 数据看板</h2>
             <button class="refresh-btn" onclick="fetchData()">刷新数据</button>
         </div>
         
-        <div class="modules-container">
-            <!-- 左侧：心理树洞模块 -->
-            <div class="module treehole-module">
-                <div class="module-title treehole-title">
-                    <span>🌳 心理树洞</span>
-                    <span class="count-badge" id="treeholeCount">0 条</span>
-                </div>
-                <div id="treeholeList">
-                    <!-- 树洞数据 -->
-                </div>
+        <!-- 切换按钮 -->
+        <div class="tabs">
+            <div class="tab active" id="tab-treehole" onclick="switchTab('treehole')">
+                🌳 心理树洞 <span class="count-badge" id="count-treehole">0</span>
             </div>
+            <div class="tab" id="tab-suggestion" onclick="switchTab('suggestion')">
+                💡 班级建议 <span class="count-badge" id="count-suggestion">0</span>
+            </div>
+        </div>
 
-            <!-- 右侧：班级建议模块 -->
-            <div class="module suggestion-module">
-                <div class="module-title suggestion-title">
-                    <span>💡 班级建议</span>
-                    <span class="count-badge" id="suggestionCount">0 条</span>
-                </div>
-                <div id="suggestionList">
-                    <!-- 建议数据 -->
-                </div>
-            </div>
+        <!-- 数据列表容器 -->
+        <div id="container-treehole" class="data-container active">
+            <!-- 树洞数据 -->
+        </div>
+        <div id="container-suggestion" class="data-container">
+            <!-- 建议数据 -->
         </div>
     </div>
 </div>
@@ -107,16 +106,28 @@
         }
     }
 
-    // 从数据库拉取并分类数据
+    // 切换 Tab 逻辑
+    function switchTab(type) {
+        // 1. 切换按钮样式
+        document.getElementById('tab-treehole').classList.remove('active');
+        document.getElementById('tab-suggestion').classList.remove('active');
+        document.getElementById(`tab-${type}`).classList.add('active');
+
+        // 2. 切换数据容器显示
+        document.getElementById('container-treehole').classList.remove('active');
+        document.getElementById('container-suggestion').classList.remove('active');
+        document.getElementById(`container-${type}`).classList.add('active');
+    }
+
+    // 拉取数据
     async function fetchData() {
-        const treeholeList = document.getElementById('treeholeList');
-        const suggestionList = document.getElementById('suggestionList');
+        const treeholeContainer = document.getElementById('container-treehole');
+        const suggestionContainer = document.getElementById('container-suggestion');
         
-        treeholeList.innerHTML = '<p class="empty-tip">正在加载...</p>';
-        suggestionList.innerHTML = '<p class="empty-tip">正在加载...</p>';
+        treeholeContainer.innerHTML = '<p class="empty-tip">正在加载数据...</p>';
+        suggestionContainer.innerHTML = '<p class="empty-tip">正在加载数据...</p>';
 
         try {
-            // 获取所有数据，按时间倒序
             const { data, error } = await supabaseClient
                 .from('messages')
                 .select('*')
@@ -124,36 +135,27 @@
 
             if (error) throw error;
 
-            // 如果完全没有数据
-            if (data.length === 0) {
-                treeholeList.innerHTML = '<p class="empty-tip">暂无树洞留言</p>';
-                suggestionList.innerHTML = '<p class="empty-tip">暂无班级建议</p>';
-                return;
-            }
-
             // 分类数据
             const treeholeData = data.filter(item => item.type === 'treehole');
             const suggestionData = data.filter(item => item.type === 'suggestion');
 
-            // 更新数量统计
-            document.getElementById('treeholeCount').innerText = `${treeholeData.length} 条`;
-            document.getElementById('suggestionCount').innerText = `${suggestionData.length} 条`;
+            // 更新角标数量
+            document.getElementById('count-treehole').innerText = treeholeData.length;
+            document.getElementById('count-suggestion').innerText = suggestionData.length;
 
-            // 渲染树洞
-            renderList(treeholeData, 'treeholeList', '暂无树洞留言');
-            // 渲染建议
-            renderList(suggestionData, 'suggestionList', '暂无班级建议');
+            // 渲染数据
+            renderList(treeholeData, treeholeContainer, 'treehole-card', '暂无树洞留言');
+            renderList(suggestionData, suggestionContainer, 'suggestion-card', '暂无班级建议');
 
         } catch (error) {
             console.error(error);
-            treeholeList.innerHTML = `<p class="empty-tip" style="color:red;">加载失败: ${error.message}</p>`;
-            suggestionList.innerHTML = `<p class="empty-tip" style="color:red;">加载失败: ${error.message}</p>`;
+            treeholeContainer.innerHTML = `<p class="empty-tip" style="color:red;">加载失败: ${error.message}</p>`;
+            suggestionContainer.innerHTML = `<p class="empty-tip" style="color:red;">加载失败: ${error.message}</p>`;
         }
     }
 
-    // 独立的渲染函数
-    function renderList(dataArray, containerId, emptyTip) {
-        const container = document.getElementById(containerId);
+    // 渲染列表
+    function renderList(dataArray, container, cardClass, emptyTip) {
         container.innerHTML = ''; // 清空
 
         if (dataArray.length === 0) {
@@ -162,20 +164,15 @@
         }
 
         dataArray.forEach(item => {
-            // 格式化时间 (月日 时:分)
             const date = new Date(item.created_at);
             const timeStr = `${date.getMonth()+1}月${date.getDate()}日 ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
 
             const card = document.createElement('div');
-            card.className = 'card';
-            
-            // 只显示时间，不显示标签了（因为分模块了）
+            card.className = `card ${cardClass}`;
             card.innerHTML = `
                 <div class="card-header">${timeStr}</div>
                 <div class="content"></div>
             `;
-            
-            // 防止 XSS
             card.querySelector('.content').textContent = item.content;
             container.appendChild(card);
         });
@@ -183,5 +180,5 @@
 </script>
 
 </body>
-
 </html>
+            
