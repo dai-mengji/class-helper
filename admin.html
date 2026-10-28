@@ -1,1 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>后台看板 - 班级心语屋</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f7f4f0; padding: 20px; color: #333; }
+        .container { max-width: 800px; margin: 0 auto; }
+        
+        /* 登录框样式 */
+        .login-box { background: #fff; padding: 30px; border-radius: 15px; text-align: center; max-width: 400px; margin: 100px auto; box-shadow: 0 5px 20px rgba(0,0,0,0.05); }
+        input[type="password"] { width: 100%; padding: 12px; margin: 15px 0; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; text-align: center; }
+        button { background: #5a4b41; color: white; border: none; padding: 12px 30px; border-radius: 8px; font-size: 16px; cursor: pointer; width: 100%; }
+        
+        /* 数据列表样式 */
+        .data-board { display: none; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .card { background: #fff; padding: 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); }
+        .card-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; }
+        .tag { padding: 3px 8px; border-radius: 5px; font-weight: bold; font-size: 12px; }
+        .tag.treehole { background: #e8f5e9; color: #2e7d32; }
+        .tag.suggestion { background: #e3f2fd; color: #1565c0; }
+        .time { color: #999; }
+        .content { font-size: 16px; line-height: 1.6; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
 
+<div class="container">
+    <!-- 登录界面 -->
+    <div class="login-box" id="loginBox">
+        <h2>导员专属后台</h2>
+        <p style="color:#999; margin-top:10px; font-size:14px;">请输入密码查看数据</p>
+        <input type="password" id="passwordInput" placeholder="请输入密码">
+        <button onclick="checkPassword()">进入看板</button>
+    </div>
+
+    <!-- 数据界面 -->
+    <div class="data-board" id="dataBoard">
+        <div class="header">
+            <h2>班级心语屋 - 数据看板</h2>
+            <button onclick="fetchData()" style="width: auto; padding: 8px 15px;">刷新数据</button>
+        </div>
+        <div id="dataList">
+            <!-- 数据会在这里显示 -->
+        </div>
+    </div>
+</div>
+
+<script>
+    // ⚠️ 这里是你设置的密码，你可以自己改成别的
+    const ADMIN_PASSWORD = '123456';
+
+    // ⚠️ 你的 Supabase 配置
+    const SUPABASE_URL = 'https://wolkqfghnfrumlznymql.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_SrYSo1bxjptkT58GnII5tg_leUceKB3';
+    const { createClient } = supabase;
+    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // 检查密码
+    function checkPassword() {
+        const pwd = document.getElementById('passwordInput').value;
+        if (pwd === ADMIN_PASSWORD) {
+            document.getElementById('loginBox').style.display = 'none';
+            document.getElementById('dataBoard').style.display = 'block';
+            fetchData(); // 密码正确，开始拉取数据
+        } else {
+            alert('密码错误！');
+        }
+    }
+
+    // 从数据库拉取所有数据
+    async function fetchData() {
+        const listDiv = document.getElementById('dataList');
+        listDiv.innerHTML = '<p style="text-align:center; color:#666;">正在加载数据...</p>';
+
+        try {
+            // 获取 messages 表的数据，按时间倒序排列（最新的在最上面）
+            const { data, error } = await supabaseClient
+                .from('messages')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            if (data.length === 0) {
+                listDiv.innerHTML = '<p style="text-align:center; color:#666;">目前还没有收到任何留言哦~</p>';
+                return;
+            }
+
+            // 渲染数据到页面
+            listDiv.innerHTML = '';
+            data.forEach(item => {
+                // 格式化时间
+                const date = new Date(item.created_at);
+                const timeStr = `${date.getMonth()+1}月${date.getDate()}日 ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
+                
+                // 区分类型
+                const isTreehole = item.type === 'treehole';
+                const tagHtml = isTreehole ? '<span class="tag treehole">🌳 心理树洞</span>' : '<span class="tag suggestion">💡 班级建议</span>';
+
+                // 生成卡片
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-header">
+                        ${tagHtml}
+                        <span class="time">${timeStr}</span>
+                    </div>
+                    <div class="content"></div>
+                `;
+                // 为了防止XSS注入，我们用 textContent 单独设置内容
+                card.querySelector('.content').textContent = item.content;
+                listDiv.appendChild(card);
+            });
+
+        } catch (error) {
+            console.error(error);
+            listDiv.innerHTML = `<p style="text-align:center; color:red;">加载失败，错误信息：${error.message}</p>`;
+        }
+    }
+</script>
+
+</body>
+</html>
