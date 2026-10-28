@@ -1,1 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>班级心语屋</title>
+    <!-- 引入 Supabase 官方库 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f7f4f0; color: #333; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        .container { background: #fff; width: 100%; max-width: 500px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); padding: 30px 20px; }
+        h1 { text-align: center; font-size: 24px; color: #5a4b41; margin-bottom: 5px; }
+        .subtitle { text-align: center; font-size: 14px; color: #999; margin-bottom: 25px; }
+        
+        /* 顶部切换按钮 */
+        .tabs { display: flex; background: #f0ede9; border-radius: 12px; padding: 5px; margin-bottom: 20px; }
+        .tab { flex: 1; text-align: center; padding: 10px 0; border-radius: 8px; cursor: pointer; font-weight: bold; color: #8c7b70; transition: all 0.3s; }
+        .tab.active { background: #fff; color: #5a4b41; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        
+        /* 输入区 */
+        textarea { width: 100%; height: 150px; padding: 15px; border: 1px solid #e0d6c8; border-radius: 12px; resize: none; font-size: 16px; line-height: 1.5; outline: none; background: #faf9f7; color: #333; transition: border 0.3s; }
+        textarea:focus { border-color: #c9a070; }
+        
+        /* 提交按钮 */
+        .submit-btn { width: 100%; padding: 15px; margin-top: 20px; background-color: #c9a070; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.3s; }
+        .submit-btn:hover { background-color: #b08a5e; }
+        .submit-btn:disabled { background-color: #e0d6c8; cursor: not-allowed; }
+        
+        /* 提示信息 */
+        .toast { text-align: center; margin-top: 15px; font-size: 14px; font-weight: bold; display: none; }
+        .toast.success { color: #2e7d32; display: block; }
+        .toast.error { color: #d32f2f; display: block; }
+    </style>
+</head>
+<body>
 
+<div class="container">
+    <h1>班级心语屋</h1>
+    <p class="subtitle">这里完全匿名，请放心倾诉</p>
+
+    <!-- 切换按钮 -->
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('treehole', this)">🌳 心理树洞</div>
+        <div class="tab" onclick="switchTab('suggestion', this)">💡 班级建议</div>
+    </div>
+
+    <textarea id="messageInput" placeholder="在这里写下你的心事或建议...（内容不会记录你的姓名）"></textarea>
+    <button class="submit-btn" id="submitBtn" onclick="submitMessage()">匿名发送</button>
+    
+    <div class="toast" id="toast"></div>
+</div>
+
+<script>
+    // 你的 Supabase 配置
+    const SUPABASE_URL = 'https://wolkqfghnfrumlznymql.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_SrYSo1bxjptkT58GnII5tg_leUceKB3';
+    
+    // 初始化 Supabase
+    const { createClient } = supabase;
+    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // 当前选中的类型（默认是树洞）
+    let currentType = 'treehole';
+
+    // 切换 Tab 的逻辑
+    function switchTab(type, element) {
+        currentType = type;
+        // 移除所有 active 类
+        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+        // 给当前点击的加上 active
+        element.classList.add('active');
+        
+        // 改变输入框提示词
+        const input = document.getElementById('messageInput');
+        if(type === 'treehole') {
+            input.placeholder = '在这里写下你的心事...（内容不会记录你的姓名）';
+        } else {
+            input.placeholder = '对班级建设有什么建议？或者对班委有什么想说的？';
+        }
+    }
+
+    // 提交数据的逻辑
+    async function submitMessage() {
+        const content = document.getElementById('messageInput').value.trim();
+        const btn = document.getElementById('submitBtn');
+        const toast = document.getElementById('toast');
+
+        if (!content) {
+            showToast('请先写点什么再提交哦~', 'error');
+            return;
+        }
+
+        // 禁用按钮，防止重复提交
+        btn.disabled = true;
+        btn.innerText = '发送中...';
+        toast.className = 'toast';
+
+        try {
+            // 插入数据到 messages 表
+            const { data, error } = await supabaseClient
+                .from('messages')
+                .insert([
+                    { type: currentType, content: content }
+                ]);
+
+            if (error) throw error;
+
+            // 成功处理
+            showToast('发送成功！你的声音已被听见。', 'success');
+            document.getElementById('messageInput').value = '';
+            
+            // 3秒后隐藏提示
+            setTimeout(() => { toast.className = 'toast'; }, 3000);
+            
+        } catch (error) {
+            console.error('Error:', error);
+            showToast('发送失败，请检查网络或联系管理员。', 'error');
+        } finally {
+            // 恢复按钮状态
+            btn.disabled = false;
+            btn.innerText = '匿名发送';
+        }
+    }
+
+    // 显示提示的辅助函数
+    function showToast(msg, type) {
+        const toast = document.getElementById('toast');
+        toast.innerText = msg;
+        toast.className = `toast ${type}`;
+    }
+</script>
+
+</body>
+</html>
